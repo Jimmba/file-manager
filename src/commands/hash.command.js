@@ -1,7 +1,7 @@
 import { createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
 import { InvalidInputException } from "../exceptions/index.js";
-import { checkDirectory, getFullPath } from "../helpers/index.js";
+import { checkAccess, getFullPath } from "../helpers/index.js";
 
 const getFileHash = (filePath) => {
   return new Promise((res, rej) => {
@@ -26,7 +26,8 @@ const getFileHash = (filePath) => {
 export const calculateHash = async ([path]) => {
   if (!path) throw new InvalidInputException(`Argument is not passed`);
   const pathToFile = getFullPath(path);
-  await checkDirectory(pathToFile);
+  if (!(await checkAccess(pathToFile)))
+    throw new OperationFailedException(`Path ${pathToFile} not found`);
   const hashResult = await getFileHash(pathToFile);
   console.log(`Calculated hash: ${hashResult}`);
 };

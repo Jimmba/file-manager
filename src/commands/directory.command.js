@@ -1,9 +1,12 @@
 import { readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { FILESYSTEM_ELEMENTS } from "../constants/index.js";
-import { InvalidInputException } from "../exceptions/index.js";
+import {
+  InvalidInputException,
+  OperationFailedException,
+} from "../exceptions/index.js";
 import { getHomeDirectory } from "./index.js";
-import { checkDirectory, getFullPath } from "../helpers/index.js";
+import { checkAccess, getFullPath } from "../helpers/index.js";
 
 let currentDirectory;
 export const getCurrentDirectory = () => currentDirectory;
@@ -13,9 +16,12 @@ export const showCurrentDirectory = () => {
   console.log(`Current directory is ${currentDirectory}`);
 };
 
-export const updateCurrentDirectory = async (path) => {
-  const newPath = await checkDirectory(path);
-  currentDirectory = newPath;
+export const updateCurrentDirectory = async (fullPath, passedPath) => {
+  if (!(await checkAccess(fullPath)))
+    throw new OperationFailedException(
+      `Path '${passedPath || fullPath}' not found`
+    );
+  currentDirectory = fullPath;
 };
 
 const sortFoldersFirst = (list) => {
@@ -63,13 +69,14 @@ export const up = async () => {
 export const cd = async ([path]) => {
   if (!path) throw new InvalidInputException(`Argument is not passed`);
   const pathToDirectory = getFullPath(path);
-  await updateCurrentDirectory(pathToDirectory);
+  await updateCurrentDirectory(pathToDirectory, path);
 };
 
 export const ls = async ([path]) => {
   const pathToDirectory = path ? getFullPath(path) : currentDirectory;
 
-  await checkDirectory(pathToDirectory);
+  if (!(await checkAccess(pathToDirectory)))
+    throw new OperationFailedException(`Path '${path}' not found`);
   const pathStat = await stat(pathToDirectory);
   if (!pathStat.isDirectory())
     throw new InvalidInputException(`Passed path '${path}' is not directory`);

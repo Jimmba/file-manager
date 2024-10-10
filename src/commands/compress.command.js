@@ -2,18 +2,26 @@ import { createReadStream, createWriteStream } from "fs";
 import { createGzip, createGunzip } from "zlib";
 import { dirname } from "node:path";
 
-import { InvalidInputException } from "../exceptions/index.js";
-import { checkDirectory, getFullPath } from "../helpers/index.js";
+import {
+  InvalidInputException,
+  OperationFailedException,
+} from "../exceptions/index.js";
+import { checkAccess, getFullPath } from "../helpers/index.js";
 
 const compressionHandler = async (inputFile, outputFile, isCompress) => {
   if (!inputFile || !outputFile)
     throw new InvalidInputException(`Arguments is not passed correctly`);
   const pathToInputFile = getFullPath(inputFile);
-  await checkDirectory(pathToInputFile);
+  if (!(await checkAccess(pathToInputFile)))
+    throw new OperationFailedException(`No access to file '${inputFile}'`);
 
   const pathToOutputFile = getFullPath(outputFile);
+  if (await checkAccess(pathToOutputFile))
+    throw new OperationFailedException(`File '${outputFile} already exists'`);
+
   const outputDirectory = dirname(pathToOutputFile);
-  await checkDirectory(outputDirectory);
+  if (!(await checkAccess(outputDirectory)))
+    throw new OperationFailedException(`No access to '${outputDirectory}'`);
   if (pathToOutputFile === outputDirectory)
     throw new InvalidInputException("Destination filename is not passed");
 

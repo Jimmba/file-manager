@@ -6,16 +6,15 @@ import { InvalidInputException } from "../exceptions/index.js";
 import { checkDirectory, getFullPath } from "../helpers/index.js";
 
 const compressionHandler = async (inputFile, outputFile, isCompress) => {
-  console.log(1);
   if (!inputFile || !outputFile)
     throw new InvalidInputException(`Arguments is not passed correctly`);
   const pathToInputFile = getFullPath(inputFile);
   await checkDirectory(pathToInputFile);
 
   const pathToOutputFile = getFullPath(outputFile);
-  const outputDir = dirname(pathToOutputFile);
-  await checkDirectory(outputDir);
-  if (pathToOutputFile === outputDir)
+  const outputDirectory = dirname(pathToOutputFile);
+  await checkDirectory(outputDirectory);
+  if (pathToOutputFile === outputDirectory)
     throw new InvalidInputException("Destination filename is not passed");
 
   const readStream = createReadStream(pathToInputFile);

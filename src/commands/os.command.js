@@ -1,13 +1,5 @@
 import os from "node:os";
-const commandPrefix = "--";
-
-export const getFromOs = ([arg]) => {
-  const command = arg.slice(commandPrefix.length);
-  console.warn("os command", command); // ! remove console
-  const runCommand = osCommands[command];
-  if (!runCommand) throw new Error("Os command not found");
-  runCommand();
-};
+import { InvalidInputException } from "../exceptions/index.js";
 
 const showEOL = () => {
   const eol = os.EOL;
@@ -27,7 +19,7 @@ const showCpuData = () => {
   });
 };
 
-export const getHomeDirectory = () => os.homedir();
+export const getHomeDirectory = () => os.homedir().toLowerCase();
 
 const showHomeDirectory = () => {
   console.log(`Home directory: ${getHomeDirectory()}`);
@@ -43,10 +35,23 @@ const showArch = () => {
   console.log(`CPU Architecture: ${cpuArch}`);
 };
 
-const osCommands = {
+const options = {
   EOL: showEOL,
   cpus: showCpuData,
   homedir: showHomeDirectory,
   userName: showUserName,
   architecture: showArch,
+};
+
+export const getOsOptions = async ([arg]) => {
+  return new Promise((res, rej) => {
+    if (!arg) rej(new InvalidInputException(`OS arguments is not passed`));
+
+    const optionPrefix = "--";
+    const option = arg.slice(optionPrefix.length);
+    const runOption = options[option];
+    if (!runOption)
+      rej(new InvalidInputException(`OS argument '${arg}' not found`));
+    res(runOption());
+  });
 };

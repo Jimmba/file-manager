@@ -1,1 +1,2 @@
-export * from "./os.js";
+export * from "./os.command.js";
+export * from "./directory.command.js";

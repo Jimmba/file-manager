@@ -1,6 +1,8 @@
 import { access } from "node:fs/promises";
 import { resolve } from "node:path";
+
 import { getCurrentDirectory } from "../commands/index.js";
+import { InvalidInputException } from "../exceptions/index.js";
 
 const checkAccess = async (path) => {
   try {

@@ -1,12 +1,14 @@
 import { Transform } from "node:stream";
 import { getUsernameFromArgs } from "./helpers/index.js";
 import {
-  getOsOptions,
-  showCurrentDirectory,
-  cd,
-  ls,
-  up,
   calculateHash,
+  cd,
+  compressFile,
+  decompressFile,
+  getOsOptions,
+  ls,
+  showCurrentDirectory,
+  up,
 } from "./commands/index.js";
 import { InvalidInputException } from "./exceptions/index.js";
 
@@ -16,14 +18,16 @@ const commands = {
   cd: cd,
   ls: ls,
   hash: calculateHash,
+  compress: compressFile,
+  decompress: decompressFile,
 };
 
-const execCommand = async (command, args) => {
+const execCommand = (command, args) => {
   //! rename?
   const runCommand = commands[command];
   if (!runCommand)
     throw new InvalidInputException(`Command \"${command}\" not found`);
-  await runCommand(args);
+  return runCommand(args);
 };
 
 const transform = new Transform({

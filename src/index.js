@@ -15,6 +15,7 @@ const commands = {
   up: up,
   cd: cd,
   ls: ls,
+  hash: calculateHash,
 };
 
 const execCommand = async (command, args) => {

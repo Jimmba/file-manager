@@ -4,9 +4,15 @@ import {
   calculateHash,
   cd,
   compressFile,
+  copySingleFile,
+  createEmptyFile,
   decompressFile,
   getOsOptions,
   ls,
+  moveFile,
+  readFile,
+  removeFile,
+  renameFile,
   showCurrentDirectory,
   up,
 } from "./commands/index.js";
@@ -20,6 +26,12 @@ const commands = {
   hash: calculateHash,
   compress: compressFile,
   decompress: decompressFile,
+  cat: readFile,
+  add: createEmptyFile,
+  rename: renameFile,
+  cp: copySingleFile,
+  mv: moveFile,
+  rm: removeFile,
 };
 
 const execCommand = (command, args) => {

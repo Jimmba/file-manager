@@ -39,13 +39,13 @@ const options = {
   EOL: showEOL,
   cpus: showCpuData,
   homedir: showHomeDirectory,
-  userName: showUserName,
+  username: showUserName,
   architecture: showArch,
 };
 
 export const getOsOptions = async ([arg]) => {
   return new Promise((res, rej) => {
-    if (!arg) rej(new InvalidInputException(`OS arguments is not passed`));
+    if (!arg) rej(new InvalidInputException(`OS arguments not passed`));
 
     const optionPrefix = "--";
     const option = arg.slice(optionPrefix.length);

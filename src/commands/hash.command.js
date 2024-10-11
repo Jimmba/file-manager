@@ -24,7 +24,7 @@ const getFileHash = (filePath) => {
 };
 
 export const calculateHash = async ([path]) => {
-  if (!path) throw new InvalidInputException(`Argument is not passed`);
+  if (!path) throw new InvalidInputException(`Argument not passed`);
   const pathToFile = getFullPath(path);
   if (!(await checkAccess(pathToFile)))
     throw new OperationFailedException(`Path ${pathToFile} not found`);

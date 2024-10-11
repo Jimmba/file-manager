@@ -6,7 +6,11 @@ import {
   OperationFailedException,
 } from "../exceptions/index.js";
 import { getHomeDirectory } from "./index.js";
-import { checkAccess, getFullPath } from "../helpers/index.js";
+import {
+  checkAccess,
+  fileSystemElementType,
+  getFullPath,
+} from "../helpers/index.js";
 
 let currentDirectory;
 export const getCurrentDirectory = () => currentDirectory;
@@ -35,7 +39,8 @@ const sortFoldersFirst = (list) => {
   return folders.concat(others);
 };
 
-const getContentType = async (path) => {
+export const getContentType = async (path) => {
+  //! replace to helper?
   try {
     const itemStat = await stat(path);
     if (itemStat.isFile()) return FILESYSTEM_ELEMENTS.file;
@@ -67,8 +72,14 @@ export const up = async () => {
 };
 
 export const cd = async ([path]) => {
-  if (!path) throw new InvalidInputException(`Argument is not passed`);
+  if (!path) throw new InvalidInputException(`Argument not passed`);
   const pathToDirectory = getFullPath(path);
+  const isDirectory = await fileSystemElementType(
+    pathToDirectory,
+    FILESYSTEM_ELEMENTS.directory
+  );
+  if (!isDirectory)
+    throw new InvalidInputException(`Passed path '${path}' not directory`);
   await updateCurrentDirectory(pathToDirectory, path);
 };
 
@@ -79,7 +90,7 @@ export const ls = async ([path]) => {
     throw new OperationFailedException(`Path '${path}' not found`);
   const pathStat = await stat(pathToDirectory);
   if (!pathStat.isDirectory())
-    throw new InvalidInputException(`Passed path '${path}' is not directory`);
+    throw new InvalidInputException(`Passed path '${path}' is not a directory`);
 
   const contents = (await readdir(pathToDirectory)).sort();
   const promiseList = contents.map(async (content) => {

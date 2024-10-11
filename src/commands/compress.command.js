@@ -10,7 +10,7 @@ import { checkAccess, getFullPath } from "../helpers/index.js";
 
 const compressionHandler = async (inputFile, outputFile, isCompress) => {
   if (!inputFile || !outputFile)
-    throw new InvalidInputException(`Arguments is not passed correctly`);
+    throw new InvalidInputException(`Arguments passed incorrectly`);
   const pathToInputFile = getFullPath(inputFile);
   if (!(await checkAccess(pathToInputFile)))
     throw new OperationFailedException(`No access to file '${inputFile}'`);
@@ -23,7 +23,7 @@ const compressionHandler = async (inputFile, outputFile, isCompress) => {
   if (!(await checkAccess(outputDirectory)))
     throw new OperationFailedException(`No access to '${outputDirectory}'`);
   if (pathToOutputFile === outputDirectory)
-    throw new InvalidInputException("Destination filename is not passed");
+    throw new InvalidInputException("Destination filename not passed");
 
   const readStream = createReadStream(pathToInputFile);
   const gzipStream = isCompress ? createGzip() : createGunzip();

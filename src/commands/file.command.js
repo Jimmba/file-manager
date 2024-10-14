@@ -12,6 +12,20 @@ import {
 } from "../helpers/index.js";
 import { FILESYSTEM_ELEMENTS } from "../constants/filesystem_elements.constant.js";
 
+const readFileHandler = (filePath) => {
+  return new Promise((res, rej) => {
+    const stream = createReadStream(filePath);
+    stream.on("end", () => {
+      process.stdout.write("\n");
+      res();
+    });
+    stream.on("error", (e) => {
+      rej(new OperationFailedException(e.message));
+    });
+    stream.pipe(process.stdout);
+  });
+};
+
 export const readFile = async ([path]) => {
   const filePath = getFullPath(path);
   if (!(await checkAccess(filePath)))
@@ -20,16 +34,10 @@ export const readFile = async ([path]) => {
     filePath,
     FILESYSTEM_ELEMENTS.file
   );
-  if (!isFile) throw new InvalidInputException(`Path '${path}' is not a file`);
+  if (!isFile)
+    throw new OperationFailedException(`Path '${path}' is not a file`);
 
-  const stream = createReadStream(filePath);
-  stream.on("end", () => {
-    process.stdout.write("\n");
-  });
-  stream.on("error", (e) => {
-    console.log(e);
-  });
-  stream.pipe(process.stdout);
+  return readFileHandler(filePath);
 };
 
 export const createEmptyFile = async ([path]) => {
@@ -57,10 +65,9 @@ export const renameFile = async ([oldFilePath, newFilePath]) => {
 
   const newFileName = basename(getFullPath(newFilePath));
   const pathToNewFile = resolve(oldFileDirectory, newFileName);
-  console.log(newFilePath);
 
   if (pathToOldFile === pathToNewFile)
-    throw new InvalidInputException(`Filename is not changed`);
+    throw new InvalidInputException(`You entered the same filename`);
   const isNewFileExist = await checkAccess(pathToNewFile);
   console.log(pathToOldFile, " ====> ", pathToNewFile);
 
@@ -71,8 +78,33 @@ export const renameFile = async ([oldFilePath, newFilePath]) => {
   console.log(`Renamed: ${oldFileName} --> ${newFileName}`);
 };
 
+export const copyFileHandler = (
+  fromPath,
+  toPath,
+  fullFromPath,
+  fullToPath,
+  isMove
+) => {
+  return new Promise((res, rej) => {
+    const readStream = createReadStream(fullFromPath);
+    readStream.on("error", (e) => {
+      rej(new OperationFailedException(e.message));
+    });
+
+    const writeStream = createWriteStream(fullToPath);
+    writeStream.on("error", (e) => {
+      rej(new OperationFailedException(e.message));
+    });
+    writeStream.on("finish", () => {
+      if (!isMove) console.log(`Copied: ${fromPath} --> ${toPath}`);
+      res();
+    });
+
+    readStream.pipe(writeStream);
+  });
+};
+
 export const copySingleFile = async ([fromPath, toPath], isMove = false) => {
-  console.log("here");
   if (!fromPath || !toPath)
     throw new InvalidInputException("Arguments passed incorectly");
   const fullFromPath = getFullPath(fromPath);
@@ -95,45 +127,38 @@ export const copySingleFile = async ([fromPath, toPath], isMove = false) => {
     FILESYSTEM_ELEMENTS.directory
   );
   if (!toPathIsDirectory)
-    throw new OperationFailedException(`Path '${toPath} is not directory'`);
+    throw new OperationFailedException(`Path '${toPath} is not a directory'`);
 
   const fileName = basename(fullFromPath);
   const fullToPath = resolve(toPathDirectory, fileName);
   if (fullFromPath === fullToPath)
-    throw new InvalidInputException(`Passed path the same`);
+    throw new InvalidInputException(`You cannot copy a file to itself`);
   if (await checkAccess(fullToPath))
     throw new OperationFailedException(`File '${fileName}' already exists`);
 
-  const readStream = createReadStream(fullFromPath);
-  readStream.on("error", (e) => {
-    console.log(e);
-  });
-
-  const writeStream = createWriteStream(fullToPath);
-  writeStream.on("error", (e) => {
-    console.log(e);
-  });
-  writeStream.on("finish", () => {
-    if (!isMove) console.log(`Copied: ${fromPath} --> ${toPath}`);
-  });
-
-  readStream.pipe(writeStream);
+  return copyFileHandler(fromPath, toPath, fullFromPath, fullToPath, isMove);
 };
 
 export const moveFile = async (args) => {
   const [fromPath, toPath] = args;
   const isMove = true;
   await copySingleFile(args, isMove);
-  await removeFile(args);
-  console.log(`Moved: ${fromPath} --> ${toPath}`);
+  await removeFile(args, isMove);
+  console.log(`File is moved: ${fromPath} --> ${toPath}`);
 };
 
 export const removeFile = async ([path], isMove = false) => {
   const filePath = getFullPath(path);
-  console.log(filePath);
   const isFileExist = await checkAccess(filePath);
   if (!isFileExist)
     throw new OperationFailedException(`Path ${path} not found`);
+
+  const isFile = await fileSystemElementType(
+    filePath,
+    FILESYSTEM_ELEMENTS.file
+  );
+  if (!isFile)
+    throw new OperationFailedException(`Path '${path}' is not a file`);
 
   await rm(filePath);
   if (!isMove) console.log(`File '${path}' has been removed`);

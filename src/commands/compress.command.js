@@ -1,12 +1,50 @@
 import { createReadStream, createWriteStream } from "fs";
-import { createGzip, createGunzip } from "zlib";
+import { createBrotliCompress, createBrotliDecompress } from "zlib";
 import { dirname } from "node:path";
 
 import {
   InvalidInputException,
   OperationFailedException,
 } from "../exceptions/index.js";
-import { checkAccess, getFullPath } from "../helpers/index.js";
+import {
+  checkAccess,
+  fileSystemElementType,
+  getFullPath,
+} from "../helpers/index.js";
+import { FILESYSTEM_ELEMENTS } from "../constants/filesystem_elements.constant.js";
+
+const streamCompressionHandler = (
+  inputFile,
+  outputFile,
+  fullPathToInputFile,
+  fullPathToOutputFile,
+  isCompress
+) => {
+  return new Promise((res, rej) => {
+    const readStream = createReadStream(fullPathToInputFile);
+    const brotliStream = isCompress
+      ? createBrotliCompress()
+      : createBrotliDecompress();
+    const writeStream = createWriteStream(fullPathToOutputFile);
+
+    readStream.on("error", (e) => {
+      rej(new OperationFailedException(e.message));
+    });
+    brotliStream.on("error", (e) => {
+      rej(new OperationFailedException(e.message));
+    });
+    writeStream.on("error", (e) => {
+      rej(new OperationFailedException(e.message));
+    });
+
+    writeStream.on("finish", () => {
+      const operation = isCompress ? "Compressed" : "Decompressed";
+      console.log(`${operation}: ${inputFile} --> ${outputFile}`);
+      res();
+    });
+    readStream.pipe(brotliStream).pipe(writeStream);
+  });
+};
 
 const compressionHandler = async (inputFile, outputFile, isCompress) => {
   if (!inputFile || !outputFile)
@@ -14,6 +52,13 @@ const compressionHandler = async (inputFile, outputFile, isCompress) => {
   const pathToInputFile = getFullPath(inputFile);
   if (!(await checkAccess(pathToInputFile)))
     throw new OperationFailedException(`No access to file '${inputFile}'`);
+
+  const isFile = await fileSystemElementType(
+    pathToInputFile,
+    FILESYSTEM_ELEMENTS.file
+  );
+  if (!isFile)
+    throw new OperationFailedException(`Path '${inputFile}' not a file`);
 
   const pathToOutputFile = getFullPath(outputFile);
   if (await checkAccess(pathToOutputFile))
@@ -24,20 +69,13 @@ const compressionHandler = async (inputFile, outputFile, isCompress) => {
     throw new OperationFailedException(`No access to '${outputDirectory}'`);
   if (pathToOutputFile === outputDirectory)
     throw new InvalidInputException("Destination filename not passed");
-
-  const readStream = createReadStream(pathToInputFile);
-  const gzipStream = isCompress ? createGzip() : createGunzip();
-  const writeStream = createWriteStream(pathToOutputFile);
-
-  writeStream.on("error", (e) => {
-    console.error(e.message);
-  });
-
-  writeStream.on("finish", () => {
-    const operation = isCompress ? "Compressed" : "Decompressed";
-    console.log(`${operation}: ${inputFile} --> ${outputFile}`);
-  });
-  readStream.pipe(gzipStream).pipe(writeStream);
+  return streamCompressionHandler(
+    inputFile,
+    outputFile,
+    pathToInputFile,
+    pathToOutputFile,
+    isCompress
+  );
 };
 
 export const compressFile = async ([inputFile, outputFile]) => {

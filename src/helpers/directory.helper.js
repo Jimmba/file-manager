@@ -4,7 +4,6 @@ import { resolve } from "node:path";
 import { getCurrentDirectory } from "../commands/index.js";
 
 export const checkAccess = async (path) => {
-  //? made public for checking if file exist (create new one)
   try {
     await access(resolve(path));
     return true;

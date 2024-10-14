@@ -28,14 +28,13 @@ const commands = {
   decompress: decompressFile,
   cat: readFile,
   add: createEmptyFile,
-  rename: renameFile,
+  rn: renameFile,
   cp: copySingleFile,
   mv: moveFile,
   rm: removeFile,
 };
 
 const execCommand = (command, args) => {
-  //! rename?
   const runCommand = commands[command];
   if (!runCommand)
     throw new InvalidInputException(`Command \"${command}\" not found`);
@@ -45,7 +44,8 @@ const execCommand = (command, args) => {
 const transform = new Transform({
   async transform(chunk, encoding, callback) {
     const input = chunk.toString().trim();
-    const [command, ...args] = input.split(" ");
+    const match = input.match(/"([^"]+)"|[^ ]+/g);
+    const [command, ...args] = match.map((arg) => arg.replace(/"/g, ""));
 
     if (input === ".exit") {
       process.exit();

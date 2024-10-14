@@ -47,6 +47,10 @@ const transform = new Transform({
     const input = chunk.toString().trim();
     const [command, ...args] = input.split(" ");
 
+    if (input === ".exit") {
+      process.exit();
+    }
+
     try {
       await execCommand(command, args);
     } catch (e) {
@@ -58,15 +62,20 @@ const transform = new Transform({
   },
 });
 
-process.on("exit", () => {
-  //! fix
-  console.log(`Thank you for using File Manager, ${userName}, goodbye!`);
-});
-
 const init = () => {
   console.log(`Welcome to the File Manager, ${getUsernameFromArgs()}!`);
   showCurrentDirectory();
   process.stdin.pipe(transform).pipe(process.stdout);
+
+  process.on("exit", () => {
+    console.log(
+      `Thank you for using File Manager, ${getUsernameFromArgs()}, goodbye!`
+    );
+  });
+
+  process.on("SIGINT", () => {
+    process.exit();
+  });
 };
 
 init();
